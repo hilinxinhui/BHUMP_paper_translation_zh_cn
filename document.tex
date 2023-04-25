@@ -1,0 +1,156 @@
+\documentclass{article}
+\usepackage[UTF8]{ctex}
+\usepackage{authblk}
+\usepackage[a4paper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\title{基于机器学习模型的电池健康状态估计方法}
+\author[1]{Darius Roman}
+\author[2, 4]{Saurabh Saxena}
+\author[1, 3, 5]{Valentin Robu}
+\author[2]{Michael Pecht}
+\author[1]{David Flynn}
+
+\affil[1]{Smart Systems Group, School of Engineering \& Physical Sciences, Heriot-Watt University, Edinburgh, EH14 4AS, UK.}
+\affil[2]{Center for Advanced Life Cycle Engineering, University of Maryland, College Park, MD 20742, USA.}
+\affil[3]{Algorithmics Group, TU Delft, Delft, the Netherlands.}
+\affil[4]{Present address: Argonne National Laboratory, Lemont, USA. }
+\affil[5]{Present address: Intelligent and Autonomous Systems Group, CWI, National Research Centre for Mathematics and Computer Science, Amsterdam, the Netherlands.}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+从便携式电子产品到电动汽车，锂离子电池在各种场景中的应用愈发广泛。无论在哪种应用场景下，通过设备板载控制器对电池健康状态（SOH）进行实时可靠地估计都是保证电池安全运行的关键性步骤。实际应用中往往使用电池容量作为电池性能退化指标，在这篇文章里，我们设计并评估了一种基于机器学习的电池容量估计方法，并在179块电池（在不同工况下工作）的循环数据上进行测试。本文的模型使用了两个参数化方法和两个非参数化方法，实现了电池健康状态估计并给出估计结果的置信区间。算法使用充电过程中的部分电压和电流数据进行自动特征选择和算法标定，最终提取了三十个特征。我们将训练好的机器学习模型部署在使用快充策略的电池上，达到均方根误差仅0.45\% 的预测精度。我们的方法为设计灵活可拓展的数据驱动的电池健康状态估计模型提供了洞见，同时强调了预测置信区间的重要性。该一方法结合了实验数据和机器学习建模，可应用于其他需要实时估计健康状态的关键部件。
+\end{abstract}
+
+\section{简介}
+
+可充电锂离子电池在许多应用中都非常重要，包括便携式电子设备、医疗设备、电网的可再生能源消纳环节和电动汽车等。在2010年至2016年期间，锂离子电池价格陡降73％，在2017年达到历史最低点，为每千瓦时273美元，这为估值高达650亿美元的巨大的储能市场打开了大门。不管应用场景如何，锂离子电池随着时间而老化。随着充放电次数的增加、操作电压范围的不同以及温度的波动，电池表现出容量降低、内阻增加的特征。电池的老化速度受动态运行条件影响，包括不同的充放电速率、不同的电压运行限制和温度波动。能够不依赖具体机理、使用数据驱动方法实现实时估计电池性能退化指标对于安全、有效的电池管理系统非常重要。某些电池状态估计可以用来预测电池的预期寿命，但是通过直接测量电池工作参数来进行在线电池状态估计的方法目前仍十分有限。
+
+SOH是一个用于量化电池的一般状态和与未使用状态相比提供指定性能能力的指标，这个性能可以用容量或阻抗来衡量。我们选择电池的容量作为其健康指标，因为容量与电池的能量储存能力有关，直接影响电池剩余运行时间和寿命。容量衰减估计这一问题已经引起了工业界和学术界的广泛关注，大量的方法已经被提出。现有的实现电池容量退化估计的方法主要包括基于电化学模型的方法、基于等效电路的方法和数据驱动的方法。电化学模型近似描述电池在操作期间内发生的化学过程，使用这种方法要求对电池工作机理（如电极材料和电解质的工作机理）的非常详尽的认识，同时该方法通常利用复杂的偏微分方程，使得其对存储空间和计算能力的要求很高。等效电路模型使用具有经验非线性参数的电路组件取代实际电池元件。与电化学模型相比，等效电路模型使用较少的输入，大大减少了需要学习的参数数量。但这种方法的预测性能很大程度上取决于对“等效”假设的准确性。事实上，假设往往难以拟合实际工作情况，导致等效电路模型准确性和鲁棒性有限。此外，为了在不同的电池荷电状态值下确定等效电路模型参数（例如欧姆阻抗和并联电阻-电容阻抗），通常需要进行脉冲放电和电化学阻抗谱分析，然而，这些测量并不适用于在线应用。
+
+相反地，数据驱动的方法有着诸多好处，包括1）这种方法与具体化学机理无关和2）这种方法能够分析更完整的退化过程，如在小负载工况下的容量退化过程（这种情形往往会被上述两种方法忽略）。到目前为止，许多研究已经使用机器学习工具进行电池状态估计的分析。增量容量分析和差分电压分析是分析电池老化机理的方法。几项研究表明，这类方法可以用于离线和在线电池容量性能衰退估计。然而，这类方法有几个缺点，为了得到增量容量曲线，需要对容量-电压曲线进行微分，这会放大噪音并将其传播到算法中。此外，这类方法工作的前提是两条曲线覆盖足够的电压范围，并限制在低充电电流率（1/5到1/25倍率）下，以获得高保真曲线。只有当充电时使用低电流值并准确记录容量-电压曲线的关键部分，才能捕捉到增量容量曲线中的特定峰值点并据此进行在线的电池容量估计。
+
+为了解决上述问题，一种替代方法是使用原始的电压-时间数据作为算法输入进行训练，从而消除微分操作。值得注意的是Richardson等人提出了一种方法，这种方法首先对电压-时间数据进行Savitsky-Golay滤波使之变得平滑，然后将等间距电压值作为高斯过程回归算法的输入。
+
+但是，高斯过程回归算法的训练过程消耗很多的计算资源，这使得高斯过程回归算法并不适用于在线电池容量估计场景，高计算复杂性使得这一算法很难向大规模电池退化数据集拓展，最后，高斯过程回归算法对输入的电压-时间曲线的部分非常敏感。其他基于贝叶斯的方法，例如相关向量机，也已用于估计电池容量退化，但是相关向量机也因慢训练而难以应用，尤其是当与其他基于频率主义的方法相比时。Shen等人提出了加速高斯过程回归训练过程的方法，代价是牺牲预测精度。与文献32使用充电曲线的恒流充电段策略不同，Wang等人使用了恒压充电段作为输入，通过支持向量回归来估计容量衰减。支持向量回归确实比高斯过程回归速度快，但这种方法并不能给出预测结果的不确定度。应用上往往需要结合估计结果和结果的不确定度量以提供足够的信息进行决策，支持向量回归在不确定度估计方面的缺失是难以将它应用在复杂动态系统（如锂离子电池）寿命预测的主要原因。
+
+过去的研究或对SOH估计的不确定度评估有限，或根本没有进行评估。我们提出的模型（battery health and uncertainty management pipeline，以下简称BHUMP），能够实时电池健康状态估计并给出估计结果的不确定度。BHUMP对获得的数据流进行分层操作，首先，在原始充电曲线分段上进行特征工程研究，继而算法自动进行离线特征提取、通过对抗样本（人为添加噪声诱导模型生成错误结果）进行数据增广并借助四种机器学习算法得到电池健康状态及其不确定度的估计。具体地，不确定性量化通过校准误差和改进的准确度度量（$\alpha$−$\beta$ 准确度区域）实现。我们在179块电池上对算法进行评估，这些电池采用不同的结构形式（圆柱电池、方形电池或软包电池）、不同正极材料（磷酸铁锂或钴酸锂）、不同充电协议（恒流充电、恒流-恒压充电或两步快速充电协议）和不同充放电倍率。
+
+\section{机器学习框架}
+
+\section{数据集}
+
+\section{算法性能}
+
+\subsection{第一组数据}
+
+\subsection{第二组数据}
+
+\subsection{第三组数据}
+
+\section{本文方法在实际场景中应用的讨论}
+
+\section{结论}
+
+\section{方法}
+
+\section{数据可用性声明}
+
+\section{代码可用性声明}
+
+\section{参考文献}
+
+%\section{Some examples to get started}
+%
+%\subsection{How to create Sections and Subsections}
+%
+%Simply use the section and subsection commands, as in this example document! With Overleaf, all the formatting and numbering is handled automatically according to the template you've chosen. If you're using Rich Text mode, you can also create new section and subsections via the buttons in the editor toolbar.
+%
+%\subsection{How to include Figures}
+%
+%First you have to upload the image file from your computer using the upload link in the file-tree menu. Then use the includegraphics command to include it in your document. Use the figure environment and the caption command to add a number and a caption to your figure. See the code for Figure \ref{fig:frog} in this section for an example.
+%
+%Note that your figure will automatically be placed in the most appropriate place for it, given the surrounding text and taking into account other figures or tables that may be close by. You can find out more about adding images to your documents in this help article on \href{https://www.overleaf.com/learn/how-to/Including_images_on_Overleaf}{including images on Overleaf}.
+%
+%\begin{figure}
+%\centering
+%\includegraphics[width=0.3\textwidth]{frog.jpg}
+%\caption{\label{fig:frog}This frog was uploaded via the file-tree menu.}
+%\end{figure}
+
+%\subsection{How to add Tables}
+%
+%Use the table and tabular environments for basic tables --- see Table~\ref{tab:widgets}, for example. For more information, please see this help article on \href{https://www.overleaf.com/learn/latex/tables}{tables}. 
+%
+%\begin{table}
+%\centering
+%\begin{tabular}{l|r}
+%Item & Quantity \\\hline
+%Widgets & 42 \\
+%Gadgets & 13
+%\end{tabular}
+%\caption{\label{tab:widgets}An example table.}
+%\end{table}
+%
+%\subsection{How to add Comments and Track Changes}
+%
+%Comments can be added to your project by highlighting some text and clicking ``Add comment'' in the top right of the editor pane. To view existing comments, click on the Review menu in the toolbar above. To reply to a comment, click on the Reply button in the lower right corner of the comment. You can close the Review pane by clicking its name on the toolbar when you're done reviewing for the time being.
+%
+%Track changes are available on all our \href{https://www.overleaf.com/user/subscription/plans}{premium plans}, and can be toggled on or off using the option at the top of the Review pane. Track changes allow you to keep track of every change made to the document, along with the person making the change. 
+%
+%\subsection{How to add Lists}
+%
+%You can make lists with automatic numbering \dots
+%
+%\begin{enumerate}
+%\item Like this,
+%\item and like this.
+%\end{enumerate}
+%\dots or bullet points \dots
+%\begin{itemize}
+%\item Like this,
+%\item and like this.
+%\end{itemize}
+%
+%\subsection{How to write Mathematics}
+%
+%\LaTeX{} is great at typesetting mathematics. Let $X_1, X_2, \ldots, X_n$ be a sequence of independent and identically distributed random variables with $\text{E}[X_i] = \mu$ and $\text{Var}[X_i] = \sigma^2 < \infty$, and let
+%\[S_n = \frac{X_1 + X_2 + \cdots + X_n}{n}
+%      = \frac{1}{n}\sum_{i}^{n} X_i\]
+%denote their mean. Then as $n$ approaches infinity, the random variables $\sqrt{n}(S_n - \mu)$ converge in distribution to a normal $\mathcal{N}(0, \sigma^2)$.
+%
+%
+%\subsection{How to change the margins and paper size}
+%
+%Usually the template you're using will have the page margins and paper size set correctly for that use-case. For example, if you're using a journal article template provided by the journal publisher, that template will be formatted according to their requirements. In these cases, it's best not to alter the margins directly.
+%
+%If however you're using a more general template, such as this one, and would like to alter the margins, a common way to do so is via the geometry package. You can find the geometry package loaded in the preamble at the top of this example file, and if you'd like to learn more about how to adjust the settings, please visit this help article on \href{https://www.overleaf.com/learn/latex/page_size_and_margins}{page size and margins}.
+%
+%\subsection{How to change the document language and spell check settings}
+%
+%Overleaf supports many different languages, including multiple different languages within one document. 
+%
+%To configure the document language, simply edit the option provided to the babel package in the preamble at the top of this example project. To learn more about the different options, please visit this help article on \href{https://www.overleaf.com/learn/latex/International_language_support}{international language support}.
+%
+%To change the spell check language, simply open the Overleaf menu at the top left of the editor window, scroll down to the spell check setting, and adjust accordingly.
+%
+%\subsection{How to add Citations and a References List}
+%
+%You can simply upload a \verb|.bib| file containing your BibTeX entries, created with a tool such as JabRef. You can then cite entries from it, like this: \cite{greenwade93}. Just remember to specify a bibliography style, as well as the filename of the \verb|.bib|. You can find a \href{https://www.overleaf.com/help/97-how-to-include-a-bibliography-using-bibtex}{video tutorial here} to learn more about BibTeX.
+%
+%If you have an \href{https://www.overleaf.com/user/subscription/plans}{upgraded account}, you can also import your Mendeley or Zotero library directly as a \verb|.bib| file, via the upload menu in the file-tree.
+%
+%\subsection{Good luck!}
+%
+%We hope you find Overleaf useful, and do take a look at our \href{https://www.overleaf.com/learn}{help library} for more tutorials and user guides! Please also let us know if you have any feedback using the Contact Us link at the bottom of the Overleaf menu --- or use the contact form at \url{https://www.overleaf.com/contact}.
+%
+%\bibliographystyle{alpha}
+%\bibliography{sample}
+
+\end{document}
