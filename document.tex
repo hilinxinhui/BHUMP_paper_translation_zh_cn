@@ -7,13 +7,13 @@
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
 \title{基于机器学习模型的电池健康状态估计方法}
-\author[1]{Darius Roman}
+\author[1]{\small Darius Roman}
 \author[2, 4]{Saurabh Saxena}
 \author[1, 3, 5]{Valentin Robu}
 \author[2]{Michael Pecht}
 \author[1]{David Flynn}
 
-\affil[1]{Smart Systems Group, School of Engineering \& Physical Sciences, Heriot-Watt University, Edinburgh, EH14 4AS, UK.}
+\affil[1]{\raggedright Smart Systems Group, School of Engineering \& Physical Sciences, Heriot-Watt University, Edinburgh, EH14 4AS, UK.}
 \affil[2]{Center for Advanced Life Cycle Engineering, University of Maryland, College Park, MD 20742, USA.}
 \affil[3]{Algorithmics Group, TU Delft, Delft, the Netherlands.}
 \affil[4]{Present address: Argonne National Laboratory, Lemont, USA. }
@@ -42,9 +42,15 @@ SOH是一个用于量化电池的一般状态和与未使用状态相比提供�
 
 过去的研究或对SOH估计的不确定度评估有限，或根本没有进行评估。我们提出的模型（battery health and uncertainty management pipeline，以下简称BHUMP），能够实时电池健康状态估计并给出估计结果的不确定度。BHUMP对获得的数据流进行分层操作，首先，在原始充电曲线分段上进行特征工程研究，继而算法自动进行离线特征提取、通过对抗样本（人为添加噪声诱导模型生成错误结果）进行数据增广并借助四种机器学习算法得到电池健康状态及其不确定度的估计。具体地，不确定性量化通过校准误差和改进的准确度度量（$\alpha$−$\beta$ 准确度区域）实现。我们在179块电池上对算法进行评估，这些电池采用不同的结构形式（圆柱电池、方形电池或软包电池）、不同正极材料（磷酸铁锂或钴酸锂）、不同充电协议（恒流充电、恒流-恒压充电或两步快速充电协议）和不同充放电倍率。
 
-\section{机器学习框架}
+本文优化并测试了我们提出的用于解决容量性能退化估计问题的机器学习算法，同时定义了用于电池健康状态估计及其不确定性度量问题中使用的机器学习模型中的不确定性的指标。BHUMP为研究者提供了一套高鲁棒性的电池健康状态估计解决方案，这套框架对各种不同化学机理的电池在各种工作条件下的状态预测都适用。BHUMP建立电池模型并从中提取中电池特征，这些特征能够充分反映电池内部老化过程并估计电池健康状态，这一方法不仅能通过不超过15分钟的充放电循环特征实现预测，同时预测精度比以往的方法都要好。我们的算法输出准确的电池健康状态估计及其不确定性，这些输出将被进一步用于估计电池荷电状态和剩余寿命，从而指导电池充放电决策，改善电池性能并最终延长电池寿命。
+
+\section{机器学习流水线}
+
+站在机器学习的视角上，预测电池容量退化情况可以被视为多变量监督学习问题。我们引入一种基于流水线（pipeline）的方法，其中包含从电池充电/放电过程中进行特征工程的过程（往往根据贝叶斯学派观点或频率学派观点训练对应模型实现特征工程），同时，通过估计预测结果的分布的均值和标准差量化出预测结果的不确定度。我们的学习模型包括两个阶段，阶段一被称为离线流水线构建和训练阶段，阶段二称为在线电池健康状态估计阶段。
 
 \section{数据集}
+
+我们在一个包含179颗电芯的数据集上测试BHUMP的性能，对于数据集的描述参考表1。这些电芯按照充电协议的不同被划分为三组，具体地，采用恒流-恒压（constant current - constant voltage，CC-CV）充电协议的电芯被划分进第一组（47颗电芯），采用恒流（constant current，CC）充电协议的电芯被划分进第二组（124颗电芯）采用两步快充（2-step fast-charging）策略的电芯被划分进第三组（8颗电芯）。这种划分很重要，对电池建模的后续环节需要依据此进行特征选择、模型训练和模型评估。对于数据集的更详尽的描述可参考辅助材料中的第四部分。
 
 \section{算法性能}
 
