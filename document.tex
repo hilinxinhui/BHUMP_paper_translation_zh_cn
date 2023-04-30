@@ -6,6 +6,8 @@
 \usepackage{graphicx}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
+\usepackage{booktabs}       % professional-quality tables
+
 \title{基于机器学习流水线的电池健康状态估计方法}
 
 \author[1]{\small Darius Roman}
@@ -57,7 +59,29 @@ SOH是一个用于量化电池的一般状态和与未使用状态相比提供�
 
 \section{数据集}
 
-我们在一个包含179颗电芯的数据集上测试BHUMP的性能，对于数据集的描述参考表1。这些电芯按照充电协议的不同被划分为三组，具体地，采用恒流-恒压（constant current - constant voltage，CC-CV）充电协议的电芯被划分进第一组（47颗电芯），采用恒流（constant current，CC）充电协议的电芯被划分进第二组（124颗电芯），采用两步快充（2-step fast-charging）协议的电芯被划分进第三组（8颗电芯）。这种划分很重要，实施BHUMP需要依据此分组进行特征选择、模型训练和模型评估。对于数据集的更详尽的描述可参考辅助材料中的第四部分。
+\begin{table*}[h!]
+	\centering
+	\resizebox{\textwidth}{!}{%
+		\begin{tabular}{@{}cccccccc@{}}
+			\toprule
+			Group{*}                       & I     & I     & I     & I               & I               & II               & III                  \\ \hline
+			Dataset  & CALCE CS2 & CALCE CX2 & CALCE PL & NASA 5 & NASA11 & TRI{**} & Oxford \\ \midrule
+			Manufacturer & Unknown  & Unknown  & Unknown  & LG Chem              & LG Chem              & A123 Systems             & Kokam                 \\ \midrule
+			Cathode \textsuperscript{***}  & LiCoO$_{2}$ & LiCoO$_{2}$ & LiCoO$_{2}$ & LiCoO$_{2}$             & LiCoO$_{2}$             & LiFePO$_{4}$             & \begin{tabular}[c]{@{}c@{}}LiCoO$_{2}$ /\\ LiNiMnCoO$_{2}$\end{tabular} \\ \midrule
+			Form factor & Prismatic & Prismatic & Pouch  & \begin{tabular}[c]{@{}c@{}}18650\\ Cylindrical\end{tabular} & \begin{tabular}[c]{@{}c@{}}18650\\ Cylindrical\end{tabular} & \begin{tabular}[c]{@{}c@{}}18650\\ Cylindrical\end{tabular} & Pouch                 \\ \midrule
+			\# cells  & 6   & 6   & 2   & 8               & 25               & 124               & 8                  \\ \midrule
+			Charge  & CC-CV  & CC-CV  & CC-CV  & CC-CV              & CC-CV              & Fast-charge             & CC                  \\ \midrule
+			Discharge & 2 regimes & 2 regimes & 1 regime & 2 regimes             & 7 regimes             & 1 regime              & 1 regime                 \\ \midrule
+			
+			
+			\multicolumn{8}{l}{ \begin{tabular}[c]{@{}l@{}}\textsuperscript{*}\footnotesize{Groups based on charge protocol}, \textsuperscript{**}\footnotesize{Toyota Research Institute}, \textsuperscript{***}\footnotesize{Information from manufacturer, not verified}\end{tabular}}                                        
+		\end{tabular}%
+	}
+	\caption{本文使用的数据集概述}
+	\label{data_rep}
+\end{table*}
+
+我们在一个包含179颗电芯的数据集上测试BHUMP的性能，对于数据集的描述参考表\ref{data_rep}。这些电芯按照充电协议的不同被划分为三组，具体地，采用恒流-恒压（constant current - constant voltage，CC-CV）充电协议的电芯被划分进第一组（47颗电芯），采用恒流（constant current，CC）充电协议的电芯被划分进第二组（124颗电芯），采用两步快充（2-step fast-charging）协议的电芯被划分进第三组（8颗电芯）。这种划分很重要，实施BHUMP需要依据此分组进行特征选择、模型训练和模型评估。对于数据集的更详尽的描述可参考辅助材料中的第四部分。
 
 \section{算法性能}
 
