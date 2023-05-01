@@ -9,6 +9,6 @@
 *.pdf
 
 ./assets/*.pdf
-./assets/*.tex
+assets/arXiv.tex
 ./assets/*.bbl
-./assets/*.sty
+assets/arxiv.sty
