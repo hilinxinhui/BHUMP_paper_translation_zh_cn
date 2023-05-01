@@ -7,6 +7,7 @@
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 \usepackage{booktabs} % professional-quality tables
 \usepackage{cite}
+\usepackage{subcaption}
 
 \title{基于机器学习流水线的电池健康状态估计方法}
 
@@ -46,13 +47,66 @@ SOH是一个用于量化电池的一般状态和与未使用状态相比提供�
 
 \section{机器学习流水线模型}
 
-站在机器学习的视角上，预测电池容量退化情况可以被视为多变量监督学习问题。我们引入一种基于流水线（pipeline）的方法，其中包含从电池充电/放电过程中进行特征工程的过程（往往根据贝叶斯学派观点或频率学派观点训练对应模型实现特征工程），同时，通过估计预测结果的分布的均值和标准差量化出预测结果的不确定度。我们的学习模型包括两个阶段，阶段一被称为离线流水线构建和训练阶段，阶段二称为在线电池健康状态估计阶段。具体地，离线阶段进行特征工程操作、训练数据增广、自动特征选择、回归模型训练和不确定性标定。在线阶段在未知电池容量的条件下使用训练好的机器学习流水线模型进行电池状态诊断。辅助材料中以流程图的形式对这两个阶段进行总结。
+站在机器学习的视角上，电池健康状态估计可以被视为多变量监督学习问题。我们引入一种基于流水线（pipeline）的方法，这种方法首先在电池充电/放电循环数据上实施特征工程特征工程，通过特征工程提取的强相关特征被用于训练机器学习模型（可以是贝叶斯模型或频率模型），最后通过估计预测结果的分布的均值和标准差量化预测结果的不确定度。我们的学习模型包括两个阶段，阶段一为离线流水线构建和训练阶段，阶段二为在线电池健康状态估计阶段。具体地，离线阶段进行特征工程实施、训练数据增广、自动特征选择、回归模型训练和不确定性标定。在线阶段在未知电池容量的条件下使用训练好的机器学习流水线模型进行电池健康状态诊断。辅助材料中归纳了这两个阶段的流程图。
 
-特征工程分为两种，一种是自动特征生成，另一种是通过神经网络自动编码器或通过加入领域先验知识的特征特征构建。我们采用基于先验知识的特征建模方法，这种方法选择对目标值贡献最多的特征量。在辅助材料的第一部分，我们还提供了一个假设，该假设旨在揭示电池的部分充电过程是如何量化电池容量退化的潜在机理的。辅助材料中的表一总结了我们在电池循环测试中记录的各种测量量。我们的机器学习流水线模型关注充电曲线片段，通过这一数据捕捉电池在充放电循环中的退化信息（图1展示了一中典型的片段选取方法）。被选中的充电曲线片段将被用于进行特征工程。
+特征工程分为两种，一种是通过神经网络自动编码器等方法实现自动特征生成/提取\cite{ref40, ref41}，另一种则是通过领域先验知识进行特征构建\cite{Williard2013, ref43}。我们采用基于先验知识的特征建模方法，这种方法选择对目标值贡献最多的特征量。在辅助材料的第一部分，我们还提供了一个旨在揭示电池的部分充电过程是如何量化电池容量退化的潜在机理的假设。辅助材料中的表一总结了我们在电池循环测试中记录的各种测量量。我们的机器学习流水线模型关注充电曲线片段，通过部分充电段数据捕捉电池在充放电循环中的退化信息（图\ref{features_calce}展示了一种典型的片段选取方法）。被选中的充电曲线片段将被用于进行特征工程。
 
-我们提出的流水线方法构造了30个特征，并使用和文献44提出的方法类似的基于随机森林的递归特征消除交叉验证法（RF-RFE-CV）选出与待预测结果最相关的特征量（递归特征消除法的总体性能胜过了其他传统方法，这是我们选择它的原因）。在训练之前，我们引入Goodfellow等人提出的对抗样本进行数据增强。我们在数据集中使用对抗样本的原因是为了改善电池设计或化学成分差异带来的影响。此外，使用对抗数据进行训练可以使算法对离群值具有鲁棒性，防止过拟合，并减少估计均值周围的分布差异。以Doyle等人提出的锂电池准二维模型为例，很多电化学模型生成合成数据的过程也可以被视为一种数据增强过程。这种方法结合了电化学模型和基于数据的模型的潜力，我们认为未来的研究必须同时整合合成数据。在训练过程中，我们使用权重衰退法进行正则化以约束模型复杂度，提高模型泛化能力。
+\begin{figure*}[h!]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}[t]{ccc}
 
-然后，增强的数据集作为四种算法的训练输入：随机森林（RF）和深度神经网络组合（dNNe）、贝叶斯岭回归（BRR）和高斯过程回归（GPR）。和基于贝叶斯主义的BRR和GPR不同，频率学派的方法受限于其基本假设和表述形式无法给出预测结果不确定性度量。为了克服这种局限性，我们考虑了两种改良的基于集成学习的算法：基于微小策略（infinitesimal jackknife， IJ）的置信区间估计和神经网络集成学习。为了训练这些模型，我们使用自适应矩估计（Adaptive Moment Estimation， Adam）优化器训练神经网络集成学习算法，用随机搜索的方法调整余下所有模型的超参数。在训练过程中我们发现，从均匀分布中抽取随机样本对BRR和GPR的参数训练来说效果最好，而对RF和dNNe参数训练，随机初始化可以得到满意的结果。此外，在超参数调整过程中，使用了批量交叉验证方法，每个批次由一个单元代表，这样的策略既防止了模型的过拟合，同时模拟了在线部署的情形。工程上应用的机器学习模型需要从误差和不确定性量化的角度进行严格的性能评估，为此，我们首先对模型进行重新校准，然后根据平均绝对百分比误差、均方根误差和不确定性估计指标进行评估。
+\begin{tabular}{c}% if you add [t], than sub images are pushed down
+    \smallskip
+        \begin{subfigure}[b]{.6\textwidth}
+            \centering
+            \caption{}
+            \includegraphics[width=\textwidth]{assets/CC_charge_cell_no_11.pdf}
+          \label{thresholds_v_gr1}
+
+        \end{subfigure}\\
+        \begin{subfigure}[b]{.6\textwidth}
+            \centering
+            \caption{}
+            \includegraphics[width=\textwidth]{assets/CV_charge_cell_no_11.pdf}
+            \label{thresholds_c_gr1}
+
+        \end{subfigure}
+\end{tabular}
+&
+\begin{tabular}{c}% if you add [t], than sub images are pushed down
+        \smallskip
+            \begin{subfigure}[b]{.55\textwidth}
+                \caption{}
+                \centering
+                \includegraphics[width=.9\textwidth]{assets/CC_prismatic_pl_cell_no_11.pdf}
+                \label{b1}
+            \end{subfigure}\\
+            \begin{subfigure}[b]{.55\textwidth}
+                \centering
+                \caption{}
+                \includegraphics[width=.9\textwidth]{assets/CV_prismatic_pl_cell_no_11.pdf}
+                \label{d1}
+            \end{subfigure}
+\end{tabular}
+&
+\begin{subfigure}{0.45\textwidth}
+    \centering
+    \caption{}
+    \includegraphics[width=0.47\textwidth]{assets/heatmap_cell_no_11.pdf}
+    \label{e1}
+\end{subfigure}
+
+\end{tabular}
+}
+
+\caption{\textbf{软包电池恒定电压-恒定电流协议充放电示意图及其随时间分布曲线} \textbf{\protect\subref{thresholds_v_gr1}} 充电过程中电压曲线，\textbf{\protect\subref{thresholds_c_gr1}}充电过程电流曲线，\textbf{\protect\subref{b1}} 提取的电压曲线段随时间分布示意图，\textbf{\protect\subref{d1}} 提取的电流曲线段随时间分布示意图，\textbf{\protect\subref{e1}} 随循环圈数增加的老化程度热力图。}
+\label{features_calce}
+\end{figure*}
+
+我们提出的流水线方法构造了30个特征，并使用和文献\cite{Guyon2002}提出的方法类似的基于随机森林的递归特征消除交叉验证法（RF-RFE-CV）选出与待预测结果最相关的特征量（递归特征消除法的总体性能胜过了其他传统方法\cite{Darst2018, Gregorutti2017}，这是我们选择它的原因）。在训练之前，我们引入Goodfellow等人提出的对抗样本\cite{ref47}进行数据增强，使用对抗样本的原因是为了改善电池设计或化学成分差异带来的影响。此外，使用对抗数据进行训练可以使算法对离群样本具有鲁棒性以防止过拟合，并减少预测分布围绕其均值（预测值）的波动。以Doyle等人提出的锂电池准二维模型为例\cite{Doyle1993}，很多电化学模型生成合成数据的过程也可以被视为一种数据增强过程。这种方法结合了电化学模型和基于数据的模型的潜力，我们认为未来的研究必须同时整合合成数据。在训练过程中，我们使用权重衰退法进行正则化以约束模型复杂度，提高模型泛化能力。
+
+增强的数据样本被作为四种算法的训练输入，这些算法分别是：随机森林（random forest，RF）和集成深度神经网络（deep neural network ensemble，dNNe）、贝叶斯岭回归（Bayesian ridge regression，BRR）和高斯过程回归（Gaussian Process Regression，GPR）。与基于贝叶斯主义的BRR和GPR不同，频率学派的方法受限于其基本假设和表述形式无法给出预测结果不确定性度量。为了克服这种局限性，我们考虑了两种改良的基于集成学习的算法：基于“无穷小刀切法”（infinitesimal jackknife，IJ）的置信区间估计\cite{Wager2014}和神经网络集成学习\cite{ref50}。为了训练这些模型，我们使用自适应矩估计（Adaptive Moment Estimation，Adam）优化器训练集成神经网络模型，用随机搜索的方法调整余下所有模型的超参数\cite{Bergstra2012}。在训练过程中我们发现，从均匀分布中抽取随机样本对BRR和GPR的参数训练来说效果最好，而对RF和dNNe参数训练，随机初始化可以得到令人满意的结果。此外，在超参数调整过程中，使用了批量交叉验证方法，每个批次由一个单元代表，这样的策略既防止了模型的过拟合，同时模拟了在线部署的情形。工程上应用的机器学习模型需要从预测结果误差和针对预测结果的不确定性量化角度进行严格的性能评估，为此，我们先对模型进行重新校准，然后根据平均绝对百分比误差、均方根误差和不确定性估计指标进行评估。
 
 \section{数据集}
 
