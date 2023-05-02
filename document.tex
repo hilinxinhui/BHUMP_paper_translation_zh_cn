@@ -49,7 +49,7 @@ SOH是一个用于量化电池的一般状态和与未使用状态相比提供�
 
 站在机器学习的视角上，电池健康状态估计可以被视为多变量监督学习问题。我们引入一种基于流水线（pipeline）的方法，这种方法首先在电池充电/放电循环数据上实施特征工程特征工程，通过特征工程提取的强相关特征被用于训练机器学习模型（可以是贝叶斯模型或频率模型），最后通过估计预测结果的分布的均值和标准差量化预测结果的不确定度。我们的学习模型包括两个阶段，阶段一为离线流水线构建和训练阶段，阶段二为在线电池健康状态估计阶段。具体地，离线阶段进行特征工程实施、训练数据增广、自动特征选择、回归模型训练和不确定性标定。在线阶段在未知电池容量的条件下使用训练好的机器学习流水线模型进行电池健康状态诊断。辅助材料中归纳了这两个阶段的流程图。
 
-特征工程分为两种，一种是通过神经网络自动编码器等方法实现自动特征生成/提取\cite{ref40, ref41}，另一种则是通过领域先验知识进行特征构建\cite{Williard2013, ref43}。我们采用基于先验知识的特征建模方法，这种方法选择对目标值贡献最多的特征量。在辅助材料的第一部分，我们还提供了一个旨在揭示电池的部分充电过程是如何量化电池容量退化的潜在机理的假设。辅助材料中的表一总结了我们在电池循环测试中记录的各种测量量。我们的机器学习流水线模型关注充电曲线片段，通过部分充电段数据捕捉电池在充放电循环中的退化信息（图\ref{features_calce}展示了一种典型的片段选取方法）。被选中的充电曲线片段将被用于进行特征工程。
+特征工程分为两种，一种是通过神经网络自动编码器等方法实现自动特征生成/提取\cite{ref40, ref41}，另一种则是通过领域先验知识进行特征构建\cite{Williard2013, ref43}。我们采用基于先验知识的特征建模方法，这种方法选择对目标值贡献最多的特征量。在辅助材料的第一部分，我们还提供了一个旨在揭示电池的部分充电过程是如何量化电池容量退化的潜在机理的假设。辅助材料中的表一总结了我们在电池循环测试中记录的各种测量量。我们的机器学习流水线模型关注充电曲线片段，通过部分充电段数据捕捉电池在充放电循环中的退化信息（图 \ref{features_calce} 展示了一种典型的片段选取方法）。被选中的充电曲线片段将被用于进行特征工程。
 
 \begin{figure*}[h!]
 \centering
@@ -132,13 +132,97 @@ SOH是一个用于量化电池的一般状态和与未使用状态相比提供�
 	\label{data_rep}
 \end{table*}
 
-我们在一个包含179颗电芯的数据集上测试BHUMP的性能，对于数据集的描述参考表\ref{data_rep}。这些电芯按照充电协议的不同被划分为三组，具体地，采用恒流-恒压（constant current - constant voltage，CC-CV）充电协议的电芯被划分进第一组（47颗电芯），采用恒流（constant current，CC）充电协议的电芯被划分进第二组（124颗电芯），采用两步快充（2-step fast-charging）协议的电芯被划分进第三组（8颗电芯）。这种划分很重要，实施BHUMP需要依据此分组进行特征选择、模型训练和模型评估。对于数据集的更详尽的描述可参考辅助材料中的第四部分。
+我们在一个包含179颗电芯的数据集上测试BHUMP的性能，对于数据集的描述参考表 \ref{data_rep} 。这些电芯按照充电协议的不同被划分为三组，具体地，采用恒流-恒压（constant current - constant voltage，CC-CV）充电协议的电芯被划分进第一组（47颗电芯），采用恒流（constant current，CC）充电协议的电芯被划分进第二组（124颗电芯），采用两步快充（2-step fast-charging）协议的电芯被划分进第三组（8颗电芯）。这种划分很重要，实施BHUMP需要依据此分组进行特征选择、模型训练和模型评估。对于数据集的更详尽的描述可参考辅助材料中的第四部分。
 
 \section{算法性能}
 
 原文依据充电协议差异将电池划分为三组，三组的性能分析内容几乎一致，这里只翻译第一组数据的算法性能评估结果。
 
+\subsection{第一组数据集上的实验}
 
+根据上述机器学习流水线模型的实施步骤，在进行特征工程后选择了18个特征作为本组数据的最优特征数量。对于阈值设置，我们将上限电压阈值$V_h$设置为4.2V，下限电压阈值$V_l$设置为3.9V。关于特征选择和训练集/验证集划分的细节请看补充材料。
+
+\begin{table}[h!]
+\centering
+\resizebox{.47\textwidth}{!}{%
+\begin{tabular}{l|c|c|c|c|c|c|c|}
+\cline{2-8}
+       & \multicolumn{1}{l|}{MAPE} & \multicolumn{1}{l|}{RMSPE} & \multicolumn{1}{l|}{$C_{score}$} & \multicolumn{1}{l|}{$Sh$} & \multicolumn{1}{l|}{$\alpha$-accuracy} & \multicolumn{1}{l|}{$\beta$} & \multicolumn{1}{l|}{$PEP$} \\ \hline
+\multicolumn{1}{|l|}{BRR} & 1.52 & 2.49 & 84.49 & 0.021 & 70.00 & 0.57 & 68.92 \\ \hline
+\multicolumn{1}{|l|}{GPR} & 1.49 & 2.24 & 92.23 & 0.025 & 65.00 & 0.48 & 71.76 \\ \hline
+\multicolumn{1}{|l|}{RF} & 0.72 & 0.91 & 100 & 0.046 & 92.00 & 0.29 & 95.29 \\ \hline
+\multicolumn{1}{|l|}{dNNe} & 0.65 & 0.92 & 88.01 & 0.0082 & 93.00 & 0.93 & 97.71\\ \hline
+\end{tabular}%
+}
+\caption{38号电池的预测性能}
+\label{results_group1_cell_38}
+\end{table}
+
+如图 \ref{predictions_group1_dNNE} 展示了当dNNe作为基算法时BHUMP模型在一块随机选择的软包电池（编号为38）上的预测性能，表 \ref{results_group1_cell_38} 展示了四种算法在38号电池上的性能。该电池在CC-CV充电协议下以0.5C倍率充电，然后在4.2V和2.7V之间以0.5C倍率进行全深度放电。
+
+\begin{figure*}[h!]
+  \centering
+%   \hfil
+\begin{subfigure}[b]{.55\textwidth}
+     \centering
+     \caption{}
+                    \includegraphics[width=\linewidth]{assets/gr1_prediction_dNNe.pdf}
+     \label{pred_group1_dNNe}
+\end{subfigure}% 
+% \hfill
+\begin{subfigure}[b]{.3\textwidth}
+     \centering
+     \caption{}
+                    \includegraphics[width=\linewidth]{assets/gr1_calibration_dNNe.pdf}
+     \label{calibration_group1_dNNE}
+  \end{subfigure}%
+  \hfill 
+  \begin{subfigure}[b]{.55\textwidth}
+     \centering
+     \caption{}
+                    \includegraphics[width=\linewidth]{assets/gr1_prediction_vs_true_dNNe.pdf}
+     \label{prediction_vs_true_dNNe_group1}
+\end{subfigure}%
+%   \hfill 
+\begin{subfigure}[b]{.3\textwidth}
+     \centering
+     \caption{}
+                    \includegraphics[width=\linewidth]{assets/gr1_histogram_dNNe.pdf}
+     \label{hist_group1_dNNE}
+  \end{subfigure}%
+    \hfill
+  \caption{\textbf{dNNe作为基算法在38号电池上的预测结果} \textbf{\protect\subref{pred_group1_dNNe}} dNNe预测的容量-时间曲线，\textbf{\protect\subref{calibration_group1_dNNE}} dNNE算法标定结果, \textbf{\protect\subref{prediction_vs_true_dNNe_group1}} dNNe预测值和真实值对照, \textbf{\protect\subref{hist_group1_dNNE}} 百分比误差柱状图（其中$y^*$为真实容量，$\hat{y}^*$为预测容量）。} 
+  \label{predictions_group1_dNNE}
+ \end{figure*}
+
+\begin{table}[h!]
+\centering
+\resizebox{.47\textwidth}{!}{%
+\begin{tabular}{l|c|c|c|c|c|c|c|}
+\cline{2-8}
+       & \multicolumn{1}{l|}{MAPE} & \multicolumn{1}{l|}{RMSPE} & \multicolumn{1}{l|}{$C_{score}$} & \multicolumn{1}{l|}{$Sh$} & \multicolumn{1}{l|}{$\alpha$-accuracy} & \multicolumn{1}{l|}{$\beta$} & \multicolumn{1}{l|}{$PEP$} \\ \hline
+\multicolumn{1}{|l|}{BRR} & 4.65 & 5.54 & 89.16 & 0.104 & 25.76 & 0.25 & 36.57 \\ \hline
+\multicolumn{1}{|l|}{GPR} & 3.70 & 4.51 & 83.62 & 0.089 & 32.04 & 0.29 & 60.07 \\ \hline
+\multicolumn{1}{|l|}{RF} & 2.17 & 2.70 & 54.70 & 0.093 & 35.94 & 0.36 & 65.47 \\ \hline
+\multicolumn{1}{|l|}{dNNe} & 3.30 & 4.26 & 86.28 & 0.043& 32.14 & 0.58 & 63.26 \\ \hline
+\end{tabular}%
+}
+\caption{第一组数据的平均预测性能}
+\label{results_group1}
+\end{table}
+
+When discussing acerage
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width = .4\textwidth]{assets/accuracy_zone.pdf}
+    \captionof{figure}{$\alpha$-accuracy zone and $\beta$ probability mass illustration.}
+    \label{accuracy_zone}
+\end{figure}
+
+总体上，尽管RF算法在RMSPE和MAPE两个指标上得到了最高的分数，
+
+表 \ref{results_group1} 总结了四种算法在第一组数据集上的平均性能。
 
 \section{本文方法在实际场景中适用性的讨论}
 
