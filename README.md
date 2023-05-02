@@ -4,7 +4,7 @@
 
 原文在[这里](https://www.nature.com/articles/s42256-021-00312-3)。
 
-在arXiv上有原文[预印本]()，请参考。
+在arXiv上有原文[预印本](https://arxiv.org/abs/2102.00837)，请参考。
 
 ## 说明
 
