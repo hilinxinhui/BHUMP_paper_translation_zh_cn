@@ -160,6 +160,8 @@ SOH是一个用于量化电池的一般状态和与未使用状态相比提供�
 
 如图 \ref{predictions_group1_dNNE} 展示了当dNNe作为基算法时BHUMP模型在一块随机选择的软包电池（编号为38）上的预测性能，表 \ref{results_group1_cell_38} 展示了四种算法在38号电池上的性能。该电池在CC-CV充电协议下以0.5C倍率充电，然后在4.2V和2.7V之间以0.5C倍率进行全深度放电。
 
+比较dNNe算法和其余三个算法（RF、BRR和GPR）的性能，我们发现前者生成的置信区间相对较小（所有图表均显示相当于95\%分位数的置信水平，即$\mu±2\sigma$，其中$\mu$为预测均值），较小的置信区间表明算法具有更高的主准确度，表现为对应的$\beta$值较大。当预测不那么准确时（如当预测一颗电池前几个循环的健康状态时），误差带可以很好反映这种变化。在38号电池上，dNNe算法dNNe也实现了最佳平均绝对百分比误差（MAPE）和均方根百分比误差（RMSPE），同时有很高的校准得分。如表 \ref{results_group1_cell_38} 所示，38号电池的预测值的RMSPE在0.65\%到1.52\%之间，表明四种算法都能实现较高的预测性能。然而，RF算法校准后预测的分布仍表现出较大波动。
+
 \begin{figure*}[h!]
   \centering
 %   \hfil
@@ -211,7 +213,8 @@ SOH是一个用于量化电池的一般状态和与未使用状态相比提供�
 \label{results_group1}
 \end{table}
 
-When discussing acerage
+当讨论算法对第一组数据集中所有电池的平均预测性能时（表 \ref{results_group1} 总结了四种算法在第一组数据集上的平均性能），我们发现RF达到了相对较低的校准误差（54.70\%），我们认为这归因于我们使用IJ方法来估计分布。在实践中，我们往往偏向保守系统，尤其是系统安全性非常重要时。这意味着对应预测值低于真实值（位于\alpha准确度区域中，如图 \ref{accuracy_zone} ）的样本应该比对应预测值高于真实值的样本多，换言之，适用于工业检测场景的算法的PEP指标应接近100\%。同时，容量估计过低会导致算法过于保守。然而，这种行为通过RMSPE的增加自然被缓解。
+参考图 \ref{prediction_vs_true_dNNe_group1} 和表 \ref{results_group1_cell_38} ，dNNe是保守的，其PEP得分最高。
 
 \begin{figure}[h!]
     \centering
@@ -220,9 +223,7 @@ When discussing acerage
     \label{accuracy_zone}
 \end{figure}
 
-总体上，尽管RF算法在RMSPE和MAPE两个指标上得到了最高的分数，
-
-表 \ref{results_group1} 总结了四种算法在第一组数据集上的平均性能。
+总体上，尽管RF算法在RMSPE和MAPE两个指标上得到了最高的分数（见表 \ref{results_group1} ），但它不能输出良好校准的预测结果，预测的精度也偏低。相比之下，dNNe模型输出的是一个良好校准的预测结果，平均校准得分仅比理想得分低不到4\%,其MAPE和RMSPE指标分别为1.13\%和1.56\%。
 
 \section{本文方法在实际场景中适用性的讨论}
 
