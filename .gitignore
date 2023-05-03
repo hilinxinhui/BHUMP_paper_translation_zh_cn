@@ -6,9 +6,9 @@
 *.out
 *.aux
 *.synctex.gz
-*.pdf
+# *.pdf
 
-./assets/*.pdf
+assets/*.pdf
 assets/arXiv.tex
-./assets/*.bbl
+assets/*.bbl
 assets/arxiv.sty
